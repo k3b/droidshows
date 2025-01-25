@@ -1,13 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 31
     defaultConfig {
-        applicationId "com.example.myapp"
-        minSdkVersion 9
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        applicationId "nl.asymmetrics.droidshows.k3b"
+        minSdkVersion 14
+        targetSdkVersion 34
+        compileSdkVersion 34
+
+        // versionCode 71110     // original andoid 2.3 api 9 version
+        // versionName "7.11.10" // original andoid 2.3 api 9 version
+        versionCode 141200       // migrated android 4.0 api 14 version
+        versionName "14.12.00"   // migrated android 4.0 api 14 version
     }
     buildTypes {
         release {
@@ -15,9 +18,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    namespace 'nl.asymmetrics.droidshows'
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:appcompat-v7:25.0.0'
+    //      implementation 'com.android.support:appcompat-v7:14.0.0'-- api 9 (Android 2.3)
+    implementation 'com.android.support:appcompat-v7:28.0.0' // lint warn compileSdkVersion does not match lib version
 }

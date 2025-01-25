@@ -1,16 +1,19 @@
 buildscript {
     repositories {
-        google()
+		google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.0'
+        // classpath 'com.android.tools.build:gradle:4.2.0'  // requires Gradle version 6.7.1
+        // classpath 'com.android.tools.build:gradle:4.0.0'  // requires Gradle version 6.1.1
+        // classpath 'com.android.tools.build:gradle:3.0.0'  // requires Gradle version 4.1.
+        classpath 'com.android.tools.build:gradle:8.6.0'     // requires Gradle version 7.5
     }
 }
 
 allprojects {
     repositories {
-        google()
+		google()
         mavenCentral()
     }
 }
