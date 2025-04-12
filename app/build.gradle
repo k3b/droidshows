@@ -4,6 +4,7 @@ android {
     defaultConfig {
         applicationId "nl.asymmetrics.droidshows.k3b"
         minSdkVersion 14
+        // minSdkVersion 21 // required androidx appcompat 1.7
         targetSdkVersion 34
         compileSdkVersion 34
 
@@ -27,5 +28,13 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     //      implementation 'com.android.support:appcompat-v7:14.0.0'-- api 9 (Android 2.3)
-    implementation 'com.android.support:appcompat-v7:28.0.0' // lint warn compileSdkVersion does not match lib version
+    // 28.0.0 is the last non-androidx version required by androidx migrationswizzard
+    // implementation 'com.android.support:appcompat-v7:28.0.0' // lint warn compileSdkVersion does not match lib version
+
+    // def appcompat_version = "1.7.0"
+    def appcompat_version = "1.0.0"
+
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+    // implementation "androidx.recyclerview:recyclerview:1.4.0"
+    implementation "androidx.recyclerview:recyclerview:1.0.0"
 }
