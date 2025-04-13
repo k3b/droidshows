@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     defaultConfig {
-        applicationId "nl.asymmetrics.droidshows.k3b"
+        applicationId "nl.asymmetrics.droidshows"
         minSdkVersion 14
         // minSdkVersion 21 // required androidx appcompat 1.7
         targetSdkVersion 34
@@ -15,8 +15,25 @@ android {
     }
     buildTypes {
         release {
+            // used to allow different configurations between debung and release to protect production data
+            buildConfigField 'String', 'CONFIG_SUFFIX', '""'
+
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // used to allow different configurations between debung and release to protect production data
+            buildConfigField 'String', 'CONFIG_SUFFIX', '"_DEBUG"'
+
+            // shrinkResources true
+            // minifyEnabled true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // to allow 2 different app installs release is seperate from debug
+            applicationIdSuffix ".k3b" //  ".debug"
+            versionNameSuffix "-DEBUG"
         }
     }
     namespace 'nl.asymmetrics.droidshows'
@@ -31,10 +48,12 @@ dependencies {
     // 28.0.0 is the last non-androidx version required by androidx migrationswizzard
     // implementation 'com.android.support:appcompat-v7:28.0.0' // lint warn compileSdkVersion does not match lib version
 
-    // def appcompat_version = "1.7.0"
-    def appcompat_version = "1.0.0"
+    // def appcompat_version = "1.7.0" // most recent requires api 21
+    // def appcompat_version = "1.0.0"
+    def appcompat_version = "1.0.2" // latest 1.0.x requires api 14
 
     implementation "androidx.appcompat:appcompat:$appcompat_version"
+
     // implementation "androidx.recyclerview:recyclerview:1.4.0"
-    implementation "androidx.recyclerview:recyclerview:1.0.0"
+    // implementation "androidx.recyclerview:recyclerview:1.0.0" // not used yet
 }

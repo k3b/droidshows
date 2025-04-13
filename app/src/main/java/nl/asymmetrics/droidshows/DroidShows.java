@@ -98,6 +98,12 @@ import android.widget.ToggleButton;
 
 public class DroidShows extends ListActivity
 {
+	// defined in build.gradle either "" for release or "_DEBUG" for debug build
+	// used to allow different configurations between debung and release to protect production data
+	public static final String CONFIG_SUFFIX = BuildConfig.CONFIG_SUFFIX;
+
+	public static final String BACKUP_DIR = "/DroidShows" + CONFIG_SUFFIX;
+
 	/* Menu Items */
 	private static final int UNDO_MENU_ITEM = Menu.FIRST;
 	private static final int FILTER_MENU_ITEM = UNDO_MENU_ITEM + 1;
@@ -134,7 +140,7 @@ public class DroidShows extends ListActivity
 	private SharedPreferences sharedPrefs;
 	private static final String AUTO_BACKUP_PREF_NAME = "auto_backup";
 	private static boolean autoBackup;
-	private static final String BACKUP_FOLDER_PREF_NAME = "backup_folder";
+	private static final String BACKUP_FOLDER_PREF_NAME = "backup_folder" + CONFIG_SUFFIX;	
 	private static String backupFolder;
 	private static final String BACKUP_VERSIONING_PREF_NAME = "backup_versioning";
 	private static boolean backupVersioning;
@@ -214,7 +220,8 @@ public class DroidShows extends ListActivity
 		// Preferences
 		sharedPrefs = getSharedPreferences(PREF_NAME, 0);
 		autoBackup = sharedPrefs.getBoolean(AUTO_BACKUP_PREF_NAME, false);
-		backupFolder = sharedPrefs.getString(BACKUP_FOLDER_PREF_NAME, Environment.getExternalStorageDirectory() +"/DroidShows");
+		backupFolder = sharedPrefs.getString(BACKUP_FOLDER_PREF_NAME, Environment.getExternalStorageDirectory() + BACKUP_DIR);
+		
 		backupVersioning = sharedPrefs.getBoolean(BACKUP_VERSIONING_PREF_NAME, true);
 		excludeSeen = sharedPrefs.getBoolean(EXCLUDE_SEEN_PREF_NAME, false);
 		sortOption = sharedPrefs.getInt(SORT_PREF_NAME, SORT_BY_NAME);
@@ -1480,7 +1487,7 @@ public class DroidShows extends ListActivity
 	@SuppressWarnings("deprecation")
 	private void errorNotify(String error) {
 		NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		PendingIntent appIntent = PendingIntent.getActivity(DroidShows.this, 0, new Intent(), 0);
+		PendingIntent appIntent = PendingIntent.getActivity(DroidShows.this, 0, new Intent(), PendingIntent.FLAG_IMMUTABLE);
 
 		Notification notification = null;
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
