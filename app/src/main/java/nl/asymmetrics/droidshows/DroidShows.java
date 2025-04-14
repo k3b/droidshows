@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -23,7 +24,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import nl.asymmetrics.droidshows.R;
+import org.apache.commons.io.IOUtils;
+
 import nl.asymmetrics.droidshows.thetvdb.TheTVDB;
 import nl.asymmetrics.droidshows.thetvdb.model.Serie;
 import nl.asymmetrics.droidshows.thetvdb.model.TVShowItem;
@@ -33,6 +35,7 @@ import nl.asymmetrics.droidshows.ui.IconView;
 import nl.asymmetrics.droidshows.ui.SerieSeasons;
 import nl.asymmetrics.droidshows.ui.ViewEpisode;
 import nl.asymmetrics.droidshows.ui.ViewSerie;
+import nl.asymmetrics.droidshows.utils.PermissionHelper;
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
 import nl.asymmetrics.droidshows.utils.SwipeDetect;
 import nl.asymmetrics.droidshows.utils.Update;
@@ -40,6 +43,7 @@ import nl.asymmetrics.droidshows.utils.Utils;
 import nl.asymmetrics.droidshows.utils.SQLiteStore.NextEpisode;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.Notification;
@@ -96,13 +100,21 @@ import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ToggleButton;
 
-public class DroidShows extends ListActivity
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+import androidx.documentfile.provider.DocumentFile;
+
+public class DroidShows extends ListActivity implements ActivityCompat.OnRequestPermissionsResultCallback
 {
 	// defined in build.gradle either "" for release or "_DEBUG" for debug build
 	// used to allow different configurations between debung and release to protect production data
-	public static final String CONFIG_SUFFIX = BuildConfig.CONFIG_SUFFIX;
+	private static final String CONFIG_SUFFIX = BuildConfig.CONFIG_SUFFIX;
 
-	public static final String BACKUP_DIR = "/DroidShows" + CONFIG_SUFFIX;
+	private static final String LOCAL_DB_FILE_NAME = "DroidShows.db";
+	private static final String BACKUP_DIR = "/DroidShows" + CONFIG_SUFFIX;
+
+	private static final int FOLDERPICKER_CODE = 1234;
 
 	/* Menu Items */
 	private static final int UNDO_MENU_ITEM = Menu.FIRST;
@@ -140,7 +152,8 @@ public class DroidShows extends ListActivity
 	private SharedPreferences sharedPrefs;
 	private static final String AUTO_BACKUP_PREF_NAME = "auto_backup";
 	private static boolean autoBackup;
-	private static final String BACKUP_FOLDER_PREF_NAME = "backup_folder" + CONFIG_SUFFIX;	
+	private static final String BACKUP_FOLDER_PREF_NAME = "backup_folder" + CONFIG_SUFFIX;
+	private static final String BACKUP_FOLDER_URI_PREF_NAME = "backup_folder_uri";
 	private static String backupFolder;
 	private static final String BACKUP_VERSIONING_PREF_NAME = "backup_versioning";
 	private static boolean backupVersioning;
@@ -675,13 +688,17 @@ public class DroidShows extends ListActivity
 	}
 
 	private void backup(boolean auto) {
-		if (auto) {
-			backup(auto, backupFolder);
+		if (PermissionHelper.REQURES_PERMISSIONS) {
+			openDocumentFileDirPick(auto);
 		} else {
-			File folder = new File(backupFolder);
-			if (!folder.isDirectory())
-				folder.mkdir();
-			filePicker(backupFolder, false);
+			if (auto) {
+				backup(auto, backupFolder);
+			} else {
+				File folder = new File(backupFolder);
+				if (!folder.isDirectory())
+					folder.mkdir();
+				filePicker(backupFolder, false);
+			}
 		}
 	}
 
@@ -739,7 +756,7 @@ public class DroidShows extends ListActivity
 					File file = new File(dir.getAbsolutePath() + File.separator + filename);
 					if (showFiles)
 						return file.isDirectory()
-							|| file.isFile() && file.getName().toLowerCase().indexOf("droidshows.db") == 0;
+							|| file.isFile() && file.getName().toLowerCase().indexOf(LOCAL_DB_FILE_NAME.toLowerCase()) == 0;
 					else
 						return file.isDirectory();
 				}
@@ -763,36 +780,52 @@ public class DroidShows extends ListActivity
 		}
 	};
 
+	/** backup for old file api */
+	@Deprecated
 	private void backup(boolean auto, final String backupFolder) {
-		File source = new File(getApplicationInfo().dataDir +"/databases/DroidShows.db");
-		File destination = new File(backupFolder, "DroidShows.db");
+		File folder = new File(backupFolder);
+		if (!folder.isDirectory())
+			folder.mkdir(); // make shure folder exists
+
+		backup(auto, DocumentFile.fromFile(folder));
+	}
+
+	/** backup for new file api */
+	private void backup(boolean auto, DocumentFile destDir) {
+		DocumentFile destination = destDir.findFile(LOCAL_DB_FILE_NAME);
+		DocumentFile sourceFile = DocumentFile.fromFile(new File(getApplicationInfo().dataDir + "/databases/" +
+				LOCAL_DB_FILE_NAME));
+
 		if (auto && (!autoBackup ||
 				new SimpleDateFormat("yyyy-MM-dd")
 					.format(destination.lastModified()).equals(lastStatsUpdateCurrent) ||
-				source.lastModified() == destination.lastModified()))
+				sourceFile.lastModified() == destination.lastModified())) {
 			return;
-		if (backupVersioning && destination.exists()) {
-			File previous0 = new File(backupFolder, "DroidShows.db0");
-			if (previous0.exists()) {
-				File previous1 = new File(backupFolder, "DroidShows.db1");
-				if (previous1.exists())
+		}
+
+		if (backupVersioning && destination != null) {
+			// exists
+			DocumentFile previous0 = destDir.findFile( LOCAL_DB_FILE_NAME + "0");
+			if (previous0 != null) {
+				DocumentFile previous1 = destDir.findFile( LOCAL_DB_FILE_NAME + "1");
+				if (previous1 != null)
 					previous1.delete();
-				previous0.renameTo(previous1);
+				previous0.renameTo(LOCAL_DB_FILE_NAME + "1");
 			}
-			destination.renameTo(previous0);
-		} else
+			destination.renameTo(LOCAL_DB_FILE_NAME + "0");
+		} else if (destination != null) {
 			destination.delete();
-		File folder = new File(backupFolder);
-		if (!folder.isDirectory())
-			folder.mkdir();
+		}
+
 		int toastTxt = R.string.dialog_backup_done;
 		try {
-			copy(source, destination);
+			destination = destDir.createFile("application/vnd.sqlite3", LOCAL_DB_FILE_NAME);
+			copy(sourceFile, destination);
 		} catch (IOException e) {
 			toastTxt = R.string.dialog_backup_failed;
 			e.printStackTrace();
 		}
-		if (!auto && toastTxt == R.string.dialog_backup_done && !backupFolder.equals(DroidShows.backupFolder)) {
+		if (!PermissionHelper.REQURES_PERMISSIONS && !auto && toastTxt == R.string.dialog_backup_done && !backupFolder.equals(DroidShows.backupFolder)) {
 			final CharSequence[] backupFolders = {backupFolder, DroidShows.backupFolder};
 			new AlertDialog.Builder(DroidShows.this)
 				.setTitle(toastTxt)
@@ -828,7 +861,7 @@ public class DroidShows extends ListActivity
 		String toastTxt = getString(R.string.dialog_restore_done);
 		File source = new File(backupFile);
 		if (source.exists()) {
-			File destination = new File(getApplicationInfo().dataDir +"/databases", "DroidShows.db");
+			File destination = new File(getApplicationInfo().dataDir +"/databases", LOCAL_DB_FILE_NAME);
 			try {
 				copy(source, destination);
 				updateDS.updateDroidShows();
@@ -837,7 +870,7 @@ public class DroidShows extends ListActivity
 					for (File thumb : thumbs)
 						thumb.delete();
 				for (File file : new File(getApplicationInfo().dataDir +"/databases").listFiles())
-				    if (!file.getName().equalsIgnoreCase("DroidShows.db")) file.delete();
+				    if (!file.getName().equalsIgnoreCase(LOCAL_DB_FILE_NAME)) file.delete();
 				updateAllSeries(2);	// 2 = update archive and current shows
 				undo.clear();
 				toastTxt += " ("+ source.getPath() +")";
@@ -851,6 +884,37 @@ public class DroidShows extends ListActivity
 		Toast.makeText(getApplicationContext(), toastTxt, Toast.LENGTH_LONG).show();
 	}
 
+	private void copy(DocumentFile source, DocumentFile destination) throws IOException {
+		if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+			if (asyncInfo != null)
+				asyncInfo.cancel(true);
+			db.close();
+			InputStream in = null;
+			OutputStream out = null;
+			try {
+				in = getContentResolver().openInputStream(source.getUri());
+				out = getContentResolver().openOutputStream(destination.getUri());
+				IOUtils.copy(in, out);
+			} finally {
+				if (in != null) {
+					in.close();
+				}
+				if (out != null) {
+					out.close();
+				}
+			}
+			db.openDataBase();
+		}
+	}
+
+	/**
+	 *
+	 * @param source
+	 * @param destination
+	 * @throws IOException
+	 * @deprecated use {@link #copy(DocumentFile, DocumentFile )} instead.
+	 */
+	@Deprecated
 	private void copy(File source, File destination) throws IOException {
 		if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
 			if (asyncInfo != null)
@@ -2015,4 +2079,93 @@ public class DroidShows extends ListActivity
 		IconView icon;
 		ImageView context;
 	}
+
+	/**
+	 * Shows picker for DocumentFileDir and calls {@link #onDocumentFileDirPickResult(Uri)} on success.
+	 * May ask for read/write permissions before.
+	 */
+	@RequiresApi(Build.VERSION_CODES.M)
+	private void openDocumentFileDirPick(boolean useLastBackupDirUri) {
+		if (PermissionHelper.hasPermissionOrRequest(this)) {
+
+			if (useLastBackupDirUri) {
+				SharedPreferences sharedPrefs = getSharedPreferences(PREF_NAME, 0);
+				String backupFolder = sharedPrefs.getString(BACKUP_FOLDER_URI_PREF_NAME, null);
+				if (backupFolder != null && !backupFolder.isEmpty()) {
+					onDocumentFileDirPickResult(Uri.parse(backupFolder));
+				}
+			}
+
+			// has permission. Ask for output dir
+			Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+			intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+					| Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+					| Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+					| Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+			startActivityForResult(intent, FOLDERPICKER_CODE);
+
+		} // else have no permession yet. permissionRequest startet.....
+	}
+
+
+	/**
+	 * Implementation of interface {@link ActivityCompat.OnRequestPermissionsResultCallback}.
+	 *
+	 * Callback for the result from requesting permissions. This method
+	 * is invoked for every call on {@link ActivityCompat#requestPermissions(android.app.Activity,
+	 * String[], int)}.
+	 * <p>
+	 * <strong>Note:</strong> It is possible that the permissions request interaction
+	 * with the user is interrupted. In this case you will receive empty permissions
+	 * and results arrays which should be treated as a cancellation.
+	 * </p>
+	 *
+	 * @param requestCode The request code passed in {@link ActivityCompat#requestPermissions(
+	 * android.app.Activity, String[], int)}
+	 * @param permissions The requested permissions. Never null.
+	 * @param grantResults The grant results for the corresponding permissions
+	 *     which is either {@link android.content.pm.PackageManager#PERMISSION_GRANTED}
+	 *     or {@link android.content.pm.PackageManager#PERMISSION_DENIED}. Never null.
+	 *
+	 * @see ActivityCompat#requestPermissions(android.app.Activity, String[], int)
+	 */
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+										   @NonNull int[] grantResults) {
+		if (PermissionHelper.REQURES_PERMISSIONS && PermissionHelper.receivedPermissionsOrFinish(this, requestCode, permissions, grantResults)) {
+			openDocumentFileDirPick(false); // permission granted
+		}
+
+	}
+
+	/**
+	 * Callback received from {@link  Activity#startActivityForResult(Intent, int)} when using the
+	 * Directory picker.
+	 * @param requestCode The integer request code originally supplied to
+	 *                    startActivityForResult(), allowing you to identify who this
+	 *                    result came from.
+	 * @param resultCode The integer result code returned by the child activity
+	 *                   through its setResult().
+	 * @param data An Intent, which can return result data to the caller
+	 *               (various data can be attached to Intent "extras").
+	 *
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (PermissionHelper.REQURES_PERMISSIONS &&  requestCode == FOLDERPICKER_CODE && resultCode == Activity.RESULT_OK && data != null) {
+			onDocumentFileDirPickResult(data.getData());
+		}
+	}
+
+	@RequiresApi(Build.VERSION_CODES.M)
+	private void onDocumentFileDirPickResult(Uri data) {
+		if (data != null) {
+			SharedPreferences sharedPrefs = getSharedPreferences(PREF_NAME, 0);
+			SharedPreferences.Editor editor = sharedPrefs.edit();
+			editor.putString(BACKUP_FOLDER_URI_PREF_NAME, data.toString());
+			editor.apply();
+			DocumentFile outDir = DocumentFile.fromTreeUri(this, data);
+			backup(false, outDir);
+		}
+	}
+
 }

@@ -131,4 +131,7 @@
 <string name="series_actors">Actors:</string>
 <string name="showstatus_continuing">continuing</string>
 <string name="showstatus_ended">ended</string>
+
+<string name="ERR_NO_WRITE_PERMISSIONS">No Permissions to write to %1$s %2$s.</string>
+
 </resources>
