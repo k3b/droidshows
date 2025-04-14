@@ -1,0 +1,59 @@
+apply plugin: 'com.android.application'
+
+android {
+    defaultConfig {
+        applicationId "nl.asymmetrics.droidshows"
+        minSdkVersion 14
+        // minSdkVersion 21 // required androidx appcompat 1.7
+        targetSdkVersion 34
+        compileSdkVersion 34
+
+        // versionCode 71110     // original andoid 2.3 api 9 version
+        // versionName "7.11.10" // original andoid 2.3 api 9 version
+        versionCode 141200       // migrated android 4.0 api 14 version
+        versionName "14.12.00"   // migrated android 4.0 api 14 version
+    }
+    buildTypes {
+        release {
+            // used to allow different configurations between debung and release to protect production data
+            buildConfigField 'String', 'CONFIG_SUFFIX', '""'
+
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // used to allow different configurations between debung and release to protect production data
+            buildConfigField 'String', 'CONFIG_SUFFIX', '"_DEBUG"'
+
+            // shrinkResources true
+            // minifyEnabled true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // to allow 2 different app installs release is seperate from debug
+            applicationIdSuffix ".k3b" //  ".debug"
+            versionNameSuffix "-DEBUG"
+        }
+    }
+    namespace 'nl.asymmetrics.droidshows'
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    //      implementation 'com.android.support:appcompat-v7:14.0.0'-- api 9 (Android 2.3)
+    // 28.0.0 is the last non-androidx version required by androidx migrationswizzard
+    // implementation 'com.android.support:appcompat-v7:28.0.0' // lint warn compileSdkVersion does not match lib version
+
+    // def appcompat_version = "1.7.0" // most recent requires api 21
+    // def appcompat_version = "1.0.0"
+    def appcompat_version = "1.0.2" // latest 1.0.x requires api 14
+
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+
+    // implementation "androidx.recyclerview:recyclerview:1.4.0"
+    // implementation "androidx.recyclerview:recyclerview:1.0.0" // not used yet
+}
