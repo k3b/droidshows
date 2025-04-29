@@ -39,16 +39,13 @@ import nl.asymmetrics.droidshows.R;
 
 public class PermissionHelper {
     /**
-     * Id to identify a Storage permission request.
-     */
-    private static final int REQUEST_CODE_STORAGE = 215;
-
-    /**
      * Permissions required to read and write Storage.
      */
     private static final String[] PERMISSIONS_STORAGE = {Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    public static final boolean REQURES_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+
+    //** if true use Permissoins and DocumentFileApi. if false : old android devices - no permission api required
+    public static final boolean USE_NEW_PERMISSIONS_FILE_API = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
 
     private PermissionHelper() {/*hide public constructor*/};
     /**
@@ -56,10 +53,10 @@ public class PermissionHelper {
      *
      * @return true if has-permissions. else false and request permissions
      * */
-    public static boolean hasPermissionOrRequest(Activity context) {
+    public static boolean hasPermissionOrRequest(Activity context, int requestCode) {
         if (!hasPermission(context)) {
             // Storage permission has not been requeste yet. Request for first time.
-            ActivityCompat.requestPermissions(context, PERMISSIONS_STORAGE, REQUEST_CODE_STORAGE);
+            ActivityCompat.requestPermissions(context, PERMISSIONS_STORAGE, requestCode);
             // no permission yet
             return false;
         } // if android-m
@@ -72,7 +69,7 @@ public class PermissionHelper {
      * @return true if has-(runtime-)permissions.
      * */
     public static boolean hasPermission(Activity context) {
-        if (REQURES_PERMISSIONS) {
+        if (USE_NEW_PERMISSIONS_FILE_API) {
             boolean needsRead = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED;
 
@@ -94,17 +91,15 @@ public class PermissionHelper {
      *
      * @return true if just received permissions. else false and calling finish
      */
-    public static boolean receivedPermissionsOrFinish(Activity activity, int requestCode,
-                                  @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CODE_STORAGE) {
-            if ( (grantResults.length == 2)
-                  && (grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                  && (grantResults[1] == PackageManager.PERMISSION_GRANTED)) {
-                return true;
-            } else {
-                showNowPermissionMessage(activity);
-                activity.finish();
-            }
+    public static boolean receivedPermissionsOrFinish(Activity activity,
+                                                      @NonNull int[] grantResults) {
+        if ( (grantResults.length == 2)
+              && (grantResults[0] == PackageManager.PERMISSION_GRANTED)
+              && (grantResults[1] == PackageManager.PERMISSION_GRANTED)) {
+            return true;
+        } else {
+            showNowPermissionMessage(activity);
+            activity.finish();
         }
         return false;
     }
