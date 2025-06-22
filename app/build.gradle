@@ -40,6 +40,12 @@ android {
     lint {
         abortOnError false
     }
+    compileOptions {
+        // sourceCompatibility JavaVersion.VERSION_17
+        // targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -57,4 +63,15 @@ dependencies {
 
     // implementation "androidx.recyclerview:recyclerview:1.4.0"
     // implementation "androidx.recyclerview:recyclerview:1.0.0" // not used yet
+
+    // ltguillaume/droidshows/issues/120 : csv support
+    // https://opencsv.sourceforge.net/licenses.html License: Apache2
+    // opencsv 3.10 was the last java-6 version
+    // opencsv 5.7.1' for java-8 may have dependencies that are not backward compatibility with android-4.1
+    //noinspection GradleDependency
+    implementation('com.opencsv:opencsv:3.10') {
+        // do not get transitive 'commons-beanutils:commons-beanutils as the opencsv bean <-> csv feature is not used
+        exclude group: 'commons-beanutils', module: 'commons-beanutils'
+    }
+
 }

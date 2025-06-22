@@ -22,6 +22,7 @@ public class TVShowItem {
         private String episodeName;
         private String episodeSeen;
 
+
         public TVShowItem(String serieid, String language, String icon, Drawable dicon, String
                           name, int snumber, String nextEpisode, Date nextAir,
                           int unwatchedAired, int unwatched, boolean passiveStatus,
@@ -41,11 +42,15 @@ public class TVShowItem {
                 this.extResources = extResources;
         }
 
-        public String getSerieId() {
+    public String getSerieId() {
                 return this.serieid;
         }
 
-        public String getLanguage() {
+    public String getSerieIdLong() {
+        return getSerieId()+"-"+getLanguage()+"-"+getName();
+    }
+
+    public String getLanguage() {
             return this.language;
         }
 

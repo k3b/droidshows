@@ -133,5 +133,7 @@
 <string name="showstatus_ended">ended</string>
 
 <string name="ERR_NO_WRITE_PERMISSIONS">No Permissions to write to %1$s %2$s.</string>
-
+<string name="menu_context_export_csv">Export as CSV </string>
+<string name="dialog_csv_export_done">Export as CSV done </string>
+<string name="dialog_csv_export_failed">Unable to export to csv!</string>
 </resources>

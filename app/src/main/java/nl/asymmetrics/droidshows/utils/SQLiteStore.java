@@ -26,6 +26,8 @@ import android.database.SQLException;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 public class SQLiteStore extends SQLiteOpenHelper
 {
 	public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -153,11 +155,23 @@ public class SQLiteStore extends SQLiteOpenHelper
 		return tvsi;
 	}
 
-	
-	public List<Episode> getEpisodes(String serieId) {
+	/**
+	 * get all Episodes that belong to serieId
+	 */
+	public List<Episode> getEpisodes(@Nullable String serieId, @Nullable Integer seasonNumber) {
 		List<Episode> episodes = null;
 		episodes = new ArrayList<Episode>();
-		Cursor c = Query("SELECT * FROM episodes WHERE serieId = '"+ serieId +"'");
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT * FROM episodes");
+		if (serieId != null) {
+			sql.append(" WHERE serieId = '" + serieId + "'");
+			if (seasonNumber != null) {
+				sql.append(" and seasonNumber = '" + seasonNumber + "'");
+			}
+		}
+
+		Cursor c = Query(sql.toString());
+		;
 		try {
 			if (c != null) {
 				int idCol = c.getColumnIndex("id");

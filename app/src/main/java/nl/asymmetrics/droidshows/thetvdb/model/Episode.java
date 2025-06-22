@@ -255,6 +255,11 @@ public class Episode
 		return this.seen;
 	}
 
+	/** calculated result */
+	public String getSeenDate() {
+		return this.seen ? getLastUpdated() : null;
+	}
+
 	public void setSeen(boolean visto) {
 		this.seen = visto;
 	}

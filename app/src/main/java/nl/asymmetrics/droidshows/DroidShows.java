@@ -30,6 +30,7 @@ import nl.asymmetrics.droidshows.thetvdb.model.Serie;
 import nl.asymmetrics.droidshows.thetvdb.model.TVShowItem;
 import nl.asymmetrics.droidshows.ui.AddSerie;
 import nl.asymmetrics.droidshows.ui.BounceListView;
+import nl.asymmetrics.droidshows.ui.DroidShowCsvHelper;
 import nl.asymmetrics.droidshows.ui.IconView;
 import nl.asymmetrics.droidshows.ui.SerieSeasons;
 import nl.asymmetrics.droidshows.ui.ViewEpisode;
@@ -121,6 +122,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 
 	private static final int BACKUP_FOLDERPICKER_CODE = 1234;
 	private static final int RESTORE_DB_PICKER_CODE = BACKUP_FOLDERPICKER_CODE + 1;
+	private static final int EXPORT_CSV_CODE = RESTORE_DB_PICKER_CODE + 1;
 
 	/* Menu Items */
 	private static final int UNDO_MENU_ITEM = Menu.FIRST;
@@ -140,7 +142,11 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 	private static final int VIEW_EPISODEDETAILS_CONTEXT = VIEW_SERIEDETAILS_CONTEXT + 1;
 	private static final int EXT_RESOURCES_CONTEXT = VIEW_EPISODEDETAILS_CONTEXT + 1;
 	private static final int MARK_NEXT_EPISODE_AS_SEEN_CONTEXT = EXT_RESOURCES_CONTEXT + 1;
-	private static final int TOGGLE_ARCHIVED_CONTEXT = MARK_NEXT_EPISODE_AS_SEEN_CONTEXT + 1;
+
+	// #120 export as csv
+	private static final int EXPORT_AS_CSV_CONTEXT = MARK_NEXT_EPISODE_AS_SEEN_CONTEXT + 1;
+
+	private static final int TOGGLE_ARCHIVED_CONTEXT = EXPORT_AS_CSV_CONTEXT + 1;
 	private static final int PIN_CONTEXT = TOGGLE_ARCHIVED_CONTEXT + 1;
 	private static final int UPDATE_CONTEXT = PIN_CONTEXT + 1;
 	private static final int SYNOPSIS_LANGUAGE = UPDATE_CONTEXT + 1;
@@ -976,6 +982,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		menu.add(0, EXT_RESOURCES_CONTEXT, EXT_RESOURCES_CONTEXT, getString(R.string.menu_context_ext_resources));
 		if (!logMode && canMarkNextEpSeen(serie))
 			menu.add(0, MARK_NEXT_EPISODE_AS_SEEN_CONTEXT, MARK_NEXT_EPISODE_AS_SEEN_CONTEXT, getString(R.string.menu_context_mark_next_episode_as_seen));
+		menu.add(0, EXPORT_AS_CSV_CONTEXT, EXPORT_AS_CSV_CONTEXT, getString(R.string.menu_context_export_csv));
 		if (!logMode) {
 			menu.add(0, TOGGLE_ARCHIVED_CONTEXT, TOGGLE_ARCHIVED_CONTEXT, getString(R.string.menu_archive));
 			menu.add(0, PIN_CONTEXT, PIN_CONTEXT, getString(R.string.menu_context_pin));
@@ -995,6 +1002,9 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		final TVShowItem serie = seriesAdapter.getItem(info.position);
 		final String serieId = serie.getSerieId();
 		switch(item.getItemId()) {
+			case EXPORT_AS_CSV_CONTEXT:
+				exportAsCsv(serie,info.position);
+				return true;
 			case MARK_NEXT_EPISODE_AS_SEEN_CONTEXT :
 				markNextEpSeen(info.position);
 				return true;
@@ -1090,6 +1100,13 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 			default :
 				return super.onContextItemSelected(item);
 		}
+	}
+
+	private static String lastSelectedSeriesId = null;
+	private void exportAsCsv(TVShowItem serie, int position) {
+		lastSelectedSeriesId = serie != null ? serie.getSerieId() : null;
+		DroidShowCsvHelper.openDocumentFilePickForCsvExport(this, EXPORT_CSV_CODE,
+				getLastUsedBackupUri(), lastSelectedSeriesId, null);
 	}
 
 	@SuppressLint("NewApi")
@@ -2133,6 +2150,12 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 			if (requestCode == RESTORE_DB_PICKER_CODE && PermissionHelper.receivedPermissionsOrFinish(this, grantResults)) {
 				openDocumentFilePickForRestore(); // permission granted
 			}
+			if (requestCode == EXPORT_CSV_CODE && PermissionHelper.receivedPermissionsOrFinish(this, grantResults)) {
+				// permission granted
+				DroidShowCsvHelper.openDocumentFilePickForCsvExport(
+						this, EXPORT_CSV_CODE,
+						getLastUsedBackupUri(), lastSelectedSeriesId, null);
+			}
 		}
 
 	}
@@ -2158,8 +2181,15 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 			if (requestCode == RESTORE_DB_PICKER_CODE) {
 				onOpenDocumentFilePickForRestoreResult(data.getData());
 			}
+			if (requestCode == EXPORT_CSV_CODE) {
+                DroidShowCsvHelper.onOpenDocumentFilePickForCsvExportResult(this, data.getData(), lastSelectedSeriesId, null);
+			}
 		}
 	}
+
+	// openDocumentFilePickForCsvExport
+	// onOpenDocumentFilePickForCsvExportResult
+
 
 	/**
 	 * Shows picker to get file for restore and calls {@link #onOpenDocumentFilePickForRestoreResult(Uri)} on success.

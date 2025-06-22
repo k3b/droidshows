@@ -21,6 +21,15 @@ public class AndroidFileUtils {
         return mimetype;
     }
 
+    public static @NonNull String getCsvMimeType() {
+        String mimetype = MimeTypeMap.getSingleton().getMimeTypeFromExtension("csv");
+        if (TextUtils.isEmpty(mimetype)) mimetype = "text/csv";
+        // See also: https://stackoverflow.com/questions/46651245/which-mime-data-type-for-android-excel-csv
+        // also XLS => application/vnd.ms-excel;
+        // XLSX => application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
+        // CSV => text/comma-separated-values
+        return mimetype;
+    }
     /**
      * deletes fileNames[fileNames.length - 1] and renames fileNames[i] to fileNames[i+1].
      * As with all DocumentFile: Instead of IOExceptions the caller must check the boolean result of the function.
