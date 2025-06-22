@@ -1106,7 +1106,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 	private void exportAsCsv(TVShowItem serie, int position) {
 		lastSelectedSeriesId = serie != null ? serie.getSerieId() : null;
 		DroidShowCsvHelper.openDocumentFilePickForCsvExport(this, EXPORT_CSV_CODE,
-				getLastUsedBackupUri(), lastSelectedSeriesId, null);
+				getLastUsedBackupUri(this), lastSelectedSeriesId, null);
 	}
 
 	@SuppressLint("NewApi")
@@ -2154,7 +2154,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 				// permission granted
 				DroidShowCsvHelper.openDocumentFilePickForCsvExport(
 						this, EXPORT_CSV_CODE,
-						getLastUsedBackupUri(), lastSelectedSeriesId, null);
+						getLastUsedBackupUri(this), lastSelectedSeriesId, null);
 			}
 		}
 
@@ -2211,7 +2211,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 			intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
 			intent.setType("*/*");
 
-			Uri lastUsedBackupUri = getLastUsedBackupUri();
+			Uri lastUsedBackupUri = getLastUsedBackupUri(this);
 			if (lastUsedBackupUri != null) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI,lastUsedBackupUri);
 
 			startActivityForResult(intent, RESTORE_DB_PICKER_CODE);
@@ -2228,16 +2228,6 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		}
 	}
 
-	private Uri getLastUsedBackupUri() {
-		Uri lastUsedBackupUri = null;
-		SharedPreferences sharedPrefs = getSharedPreferences(PREF_NAME, 0);
-		String backupFolder = sharedPrefs.getString(BACKUP_FOLDER_URI_PREF_NAME, null);
-		if (!TextUtils.isEmpty(backupFolder)) {
-			lastUsedBackupUri = Uri.parse(backupFolder);
-		}
-		return lastUsedBackupUri;
-	}
-
 	/**
 	 * Shows picker for DocumentFileDir and calls {@link #onOpenDocumentFileDirPickForBackupResult(Uri)} on success.
 	 * May ask for read/write permissions before.
@@ -2247,7 +2237,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		if (PermissionHelper.hasPermissionOrRequest(this, BACKUP_FOLDERPICKER_CODE)) {
 
 			if (useLastBackupDirUri) {
-				Uri lastUsedBackupUri = getLastUsedBackupUri();
+				Uri lastUsedBackupUri = getLastUsedBackupUri(this);
 				if (lastUsedBackupUri != null) {
 					onOpenDocumentFileDirPickForBackupResult(Uri.parse(backupFolder));
 					return;
@@ -2271,13 +2261,28 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 	@RequiresApi(Build.VERSION_CODES.M)
 	private void onOpenDocumentFileDirPickForBackupResult(Uri data) {
 		if (data != null) {
-			SharedPreferences sharedPrefs = getSharedPreferences(PREF_NAME, 0);
-			SharedPreferences.Editor editor = sharedPrefs.edit();
-			editor.putString(BACKUP_FOLDER_URI_PREF_NAME, data.toString());
-			editor.apply();
+			saveLastUsedBackupFolder(this, data);
 			DocumentFile outDir = DocumentFile.fromTreeUri(this, data);
 			backup(false, outDir);
 		}
 	}
+
+	public static void saveLastUsedBackupFolder(Context context, Uri data) {
+		SharedPreferences sharedPrefs = context.getSharedPreferences(PREF_NAME, 0);
+		SharedPreferences.Editor editor = sharedPrefs.edit();
+		editor.putString(BACKUP_FOLDER_URI_PREF_NAME, data.toString());
+		editor.apply();
+	}
+
+	public static Uri getLastUsedBackupUri(Context context) {
+		Uri lastUsedBackupUri = null;
+		SharedPreferences sharedPrefs = context.getSharedPreferences(PREF_NAME, 0);
+		String backupFolder = sharedPrefs.getString(BACKUP_FOLDER_URI_PREF_NAME, null);
+		if (!TextUtils.isEmpty(backupFolder)) {
+			lastUsedBackupUri = Uri.parse(backupFolder);
+		}
+		return lastUsedBackupUri;
+	}
+
 
 }

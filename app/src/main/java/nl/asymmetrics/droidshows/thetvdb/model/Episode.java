@@ -1,6 +1,8 @@
 package nl.asymmetrics.droidshows.thetvdb.model;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
@@ -257,11 +259,23 @@ public class Episode
 
 	/** calculated result */
 	public String getSeenDate() {
-		return this.seen ? getLastUpdated() : null;
+		return this.seen ? getAsDate(getLastUpdated()) : null;
 	}
 
 	public void setSeen(boolean visto) {
 		this.seen = visto;
+	}
+
+	private String getAsDate(String dateAsLong) {
+		if (dateAsLong != null) {
+			try {
+				long l = Long.decode(dateAsLong);
+				return new SimpleDateFormat("yyyy-MM-dd").format( new Date(l * 1000l));
+			} catch (Exception ex) {
+				; // ignore error
+			}
+		}
+		return dateAsLong;
 	}
 
 	public boolean saveToDB(SQLiteStore SQLS) {

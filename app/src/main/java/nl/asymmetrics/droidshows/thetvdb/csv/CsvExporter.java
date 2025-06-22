@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Iterator;
-import java.util.List;
 
 import nl.asymmetrics.droidshows.thetvdb.model.Episode;
 
