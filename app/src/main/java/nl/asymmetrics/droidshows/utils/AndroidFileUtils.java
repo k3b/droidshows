@@ -17,7 +17,11 @@ import java.io.OutputStream;
 public class AndroidFileUtils {
     public static @NonNull String getDatabaseMimeType() {
         String mimetype = MimeTypeMap.getSingleton().getMimeTypeFromExtension("db");
-        if (TextUtils.isEmpty(mimetype)) mimetype = "*/*";
+
+        // https://stackoverflow.com/questions/31301552/android-what-is-the-mime-type-to-use-if-i-want-to-see-pick-a-sqlite-database-fr
+        // Since Since Feb. 2018 application/vnd.sqlite3.
+        // The usage of application/x-sqlite3 is deprecated
+        if (TextUtils.isEmpty(mimetype)) mimetype = "application/vnd.sqlite3";
         return mimetype;
     }
 
