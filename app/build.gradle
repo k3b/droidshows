@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "nl.asymmetrics.droidshows"
         minSdkVersion 14

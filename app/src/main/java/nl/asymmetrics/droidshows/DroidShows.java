@@ -2199,14 +2199,17 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 	private void openDocumentFilePickForRestore() {
 		if (PermissionHelper.hasPermissionOrRequest(this, RESTORE_DB_PICKER_CODE)) {
 			// has permission. Ask for output dir
-			String mimetype = AndroidFileUtils.getDatabaseMimeType();
-
 			Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 			intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
 					| Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
 					| Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
-			intent.setType(mimetype);
 			intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+			// allow multible mime types for sqlite3 databases
+			// https://stackoverflow.com/questions/31301552/android-what-is-the-mime-type-to-use-if-i-want-to-see-pick-a-sqlite-database-fr
+			String[] mimeTypes = {"application/vnd.sqlite3", "application/x-sqlite3"};
+			intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+			intent.setType("*/*");
 
 			Uri lastUsedBackupUri = getLastUsedBackupUri();
 			if (lastUsedBackupUri != null) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI,lastUsedBackupUri);
