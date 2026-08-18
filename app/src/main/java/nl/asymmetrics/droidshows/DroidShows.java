@@ -2205,10 +2205,12 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 					| Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
 			intent.addCategory(Intent.CATEGORY_OPENABLE);
 
-			// allow multible mime types for sqlite3 databases
-			// https://stackoverflow.com/questions/31301552/android-what-is-the-mime-type-to-use-if-i-want-to-see-pick-a-sqlite-database-fr
-			String[] mimeTypes = {"application/vnd.sqlite3", "application/x-sqlite3"};
-			intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+			if (false) { // disabled. does not work on my android-10 devices
+				// allow multible mime types for sqlite3 databases
+				// https://stackoverflow.com/questions/31301552/android-what-is-the-mime-type-to-use-if-i-want-to-see-pick-a-sqlite-database-fr
+				String[] mimeTypes = {"application/vnd.sqlite3", "application/x-sqlite3"};
+				intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+			}
 			intent.setType("*/*");
 
 			Uri lastUsedBackupUri = getLastUsedBackupUri(this);

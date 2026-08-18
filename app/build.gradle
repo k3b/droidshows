@@ -5,7 +5,7 @@ android {
         buildConfig = true
     }
     defaultConfig {
-        applicationId "nl.asymmetrics.droidshows"
+        applicationId "nl.asymmetrics.droidshows.dbg" // to allow parallel installation with original app
         minSdkVersion 14
         // minSdkVersion 21 // required androidx appcompat 1.7
         targetSdkVersion 34
