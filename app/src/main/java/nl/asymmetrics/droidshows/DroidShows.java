@@ -122,7 +122,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 
 	private static final int BACKUP_FOLDERPICKER_CODE = 1234;
 	private static final int RESTORE_DB_PICKER_CODE = BACKUP_FOLDERPICKER_CODE + 1;
-	private static final int EXPORT_CSV_CODE = RESTORE_DB_PICKER_CODE + 1;
+	public static final int EXPORT_CSV_CODE = RESTORE_DB_PICKER_CODE + 1;
 
 	/* Menu Items */
 	private static final int UNDO_MENU_ITEM = Menu.FIRST;
@@ -144,9 +144,9 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 	private static final int MARK_NEXT_EPISODE_AS_SEEN_CONTEXT = EXT_RESOURCES_CONTEXT + 1;
 
 	// #120 export as csv
-	private static final int EXPORT_AS_CSV_CONTEXT = MARK_NEXT_EPISODE_AS_SEEN_CONTEXT + 1;
+	public static final int EXPORT_AS_CSV_MENU_ID = MARK_NEXT_EPISODE_AS_SEEN_CONTEXT + 1;
 
-	private static final int TOGGLE_ARCHIVED_CONTEXT = EXPORT_AS_CSV_CONTEXT + 1;
+	private static final int TOGGLE_ARCHIVED_CONTEXT = EXPORT_AS_CSV_MENU_ID + 1;
 	private static final int PIN_CONTEXT = TOGGLE_ARCHIVED_CONTEXT + 1;
 	private static final int UPDATE_CONTEXT = PIN_CONTEXT + 1;
 	private static final int SYNOPSIS_LANGUAGE = UPDATE_CONTEXT + 1;
@@ -827,7 +827,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 				LOCAL_DB_FILE_NAME_CURRENT));
 
 		if (auto && destinationFile != null && (!autoBackup ||
-				new SimpleDateFormat("yyyy-MM-dd")
+				Utils.createDateFormat()
 					.format(destinationFile.lastModified()).equals(lastStatsUpdateCurrent) ||
 				sourceFile.lastModified() == destinationFile.lastModified())) {
 			return;
@@ -982,7 +982,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		menu.add(0, EXT_RESOURCES_CONTEXT, EXT_RESOURCES_CONTEXT, getString(R.string.menu_context_ext_resources));
 		if (!logMode && canMarkNextEpSeen(serie))
 			menu.add(0, MARK_NEXT_EPISODE_AS_SEEN_CONTEXT, MARK_NEXT_EPISODE_AS_SEEN_CONTEXT, getString(R.string.menu_context_mark_next_episode_as_seen));
-		menu.add(0, EXPORT_AS_CSV_CONTEXT, EXPORT_AS_CSV_CONTEXT, getString(R.string.menu_context_export_csv));
+		menu.add(0, EXPORT_AS_CSV_MENU_ID, EXPORT_AS_CSV_MENU_ID, getString(R.string.menu_context_export_csv));
 		if (!logMode) {
 			menu.add(0, TOGGLE_ARCHIVED_CONTEXT, TOGGLE_ARCHIVED_CONTEXT, getString(R.string.menu_archive));
 			menu.add(0, PIN_CONTEXT, PIN_CONTEXT, getString(R.string.menu_context_pin));
@@ -1002,7 +1002,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		final TVShowItem serie = seriesAdapter.getItem(info.position);
 		final String serieId = serie.getSerieId();
 		switch(item.getItemId()) {
-			case EXPORT_AS_CSV_CONTEXT:
+			case EXPORT_AS_CSV_MENU_ID:
 				exportAsCsv(serie,info.position);
 				return true;
 			case MARK_NEXT_EPISODE_AS_SEEN_CONTEXT :
@@ -1102,11 +1102,13 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 		}
 	}
 
-	private static String lastSelectedSeriesId = null;
+	private static String lastCsvExportSeriesId = null;
+	private static Integer lastCsvExportSeasonNumber = null;
 	private void exportAsCsv(TVShowItem serie, int position) {
-		lastSelectedSeriesId = serie != null ? serie.getSerieId() : null;
+		lastCsvExportSeriesId = serie != null ? serie.getSerieId() : null;
+		lastCsvExportSeasonNumber = null;
 		DroidShowCsvHelper.openDocumentFilePickForCsvExport(this, EXPORT_CSV_CODE,
-				getLastUsedBackupUri(this), lastSelectedSeriesId, null);
+				getLastUsedBackupUri(this), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
 	}
 
 	@SuppressLint("NewApi")
@@ -1779,7 +1781,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 //			Log.d(SQLiteStore.TAG, "AsyncInfo Initializing");
 			try {
 				int showArchiveTmp = showArchive;
-				String newToday = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());	// thread needs own SimpleDateFormat to prevent collisions in formatting of other dates
+				String newToday = Utils.formatDate(Calendar.getInstance().getTime());	// thread needs own SimpleDateFormat to prevent collisions in formatting of other dates
 				String lastStatsUpdate = (showArchiveTmp == 0 ? lastStatsUpdateCurrent : lastStatsUpdateArchive);
 				if (!lastStatsUpdate.equals(newToday)) {
 					db.updateToday(newToday);
@@ -2154,7 +2156,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 				// permission granted
 				DroidShowCsvHelper.openDocumentFilePickForCsvExport(
 						this, EXPORT_CSV_CODE,
-						getLastUsedBackupUri(this), lastSelectedSeriesId, null);
+						getLastUsedBackupUri(this), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
 			}
 		}
 
@@ -2182,7 +2184,7 @@ public class DroidShows extends ListActivity implements ActivityCompat.OnRequest
 				onOpenDocumentFilePickForRestoreResult(data.getData());
 			}
 			if (requestCode == EXPORT_CSV_CODE) {
-                DroidShowCsvHelper.onOpenDocumentFilePickForCsvExportResult(this, data.getData(), lastSelectedSeriesId, null);
+                DroidShowCsvHelper.onOpenDocumentFilePickForCsvExportResult(this, data.getData(), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
 			}
 		}
 	}

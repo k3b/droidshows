@@ -11,6 +11,8 @@ import nl.asymmetrics.droidshows.DroidShows;
 import nl.asymmetrics.droidshows.R;
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
 import nl.asymmetrics.droidshows.utils.SwipeDetect;
+import nl.asymmetrics.droidshows.utils.Utils;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
@@ -78,7 +80,7 @@ public class ViewEpisode extends Activity
 			String firstAired = c.getString(airedCol);
 			if (!firstAired.equals("") && !firstAired.equals("null")) {
 				try {
-					epDate = SQLiteStore.dateFormat.parse(firstAired);
+					epDate = Utils.createDateFormat().parse(firstAired);
 					firstAired = SimpleDateFormat.getDateInstance().format(epDate);
 				} catch (ParseException e) {
 					Log.e(SQLiteStore.TAG, e.getMessage());

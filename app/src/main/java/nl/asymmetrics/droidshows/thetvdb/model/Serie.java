@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
+
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteException;
 import android.text.TextUtils;
@@ -299,4 +300,5 @@ public class Serie {
 
         return true;
     }
+
 }

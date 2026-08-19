@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import nl.asymmetrics.droidshows.DroidShows;
 import nl.asymmetrics.droidshows.R;
 import nl.asymmetrics.droidshows.thetvdb.model.Season;
+import nl.asymmetrics.droidshows.utils.PermissionHelper;
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
 import nl.asymmetrics.droidshows.utils.SwipeDetect;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
@@ -31,7 +34,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-public class SerieSeasons extends ListActivity
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+
+public class SerieSeasons extends ListActivity  implements ActivityCompat.OnRequestPermissionsResultCallback
 {
 	private String serieId;
 	private List<Integer> seasonNumbers = new ArrayList<Integer>();
@@ -71,6 +78,9 @@ public class SerieSeasons extends ListActivity
 		menu.add(0, ALLEPSEEN_CONTEXT, 0, getString(R.string.messages_context_mark_seasonseen));
 		menu.add(0, ALLUPTOTHIS_CONTEXT, 0, getString(R.string.messages_context_mark_asseenuptothis));
 		menu.add(0, ALLEPUNSEEN_CONTEXT, 0, getString(R.string.messages_context_mark_seasonunseen));
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			menu.add(0, DroidShows.EXPORT_AS_CSV_MENU_ID, DroidShows.EXPORT_AS_CSV_MENU_ID, getString(R.string.menu_context_export_csv));
+		}
 		menu.setHeaderTitle(seasonsAdapter.getItem(((AdapterContextMenuInfo) menuInfo).position).getSeason());
 	}
 
@@ -91,6 +101,11 @@ public class SerieSeasons extends ListActivity
 				}
 				getInfo();
 				return true;
+			case DroidShows.EXPORT_AS_CSV_MENU_ID:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    exportAsCsv(serieId,seasonNumbers.get(info.position));
+                }
+                return true;
 			default :
 				return super.onContextItemSelected(item);
 		}
@@ -283,4 +298,79 @@ public class SerieSeasons extends ListActivity
 		super.onBackPressed();
 		overridePendingTransition(R.anim.left_enter, R.anim.left_exit);
 	}
+
+	/***************************************************************/
+	///////////// Android6-filePermission-Support
+	/***************************************************************/
+
+	/**
+	 * Implementation of interface {@link ActivityCompat.OnRequestPermissionsResultCallback}.
+	 *
+	 * Callback for the result from requesting permissions. This method
+	 * is invoked for every call on {@link ActivityCompat#requestPermissions(android.app.Activity,
+	 * String[], int)}.
+	 * <p>
+	 * <strong>Note:</strong> It is possible that the permissions request interaction
+	 * with the user is interrupted. In this case you will receive empty permissions
+	 * and results arrays which should be treated as a cancellation.
+	 * </p>
+	 *
+	 * @param requestCode The request code passed in {@link ActivityCompat#requestPermissions(
+	 * android.app.Activity, String[], int)}
+	 * @param permissions The requested permissions. Never null.
+	 * @param grantResults The grant results for the corresponding permissions
+	 *     which is either {@link android.content.pm.PackageManager#PERMISSION_GRANTED}
+	 *     or {@link android.content.pm.PackageManager#PERMISSION_DENIED}. Never null.
+	 *
+	 * @see ActivityCompat#requestPermissions(android.app.Activity, String[], int)
+	 */
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+	                                       @NonNull int[] grantResults) {
+		if (PermissionHelper.USE_NEW_PERMISSIONS_FILE_API) {
+			if (requestCode == DroidShows.EXPORT_CSV_CODE && PermissionHelper.receivedPermissionsOrFinish(this, grantResults)) {
+				// permission granted
+				DroidShowCsvHelper.openDocumentFilePickForCsvExport(
+						this, DroidShows.EXPORT_CSV_CODE,
+						DroidShows.getLastUsedBackupUri(this), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
+			}
+		}
+
+	}
+
+	/**
+	 * Callback received from {@link  Activity#startActivityForResult(Intent, int)} when using the
+	 * Directory picker.
+	 * @param requestCode The integer request code originally supplied to
+	 *                    startActivityForResult(), allowing you to identify who this
+	 *                    result came from.
+	 * @param resultCode The integer result code returned by the child activity
+	 *                   through its setResult().
+	 * @param data An Intent, which can return result data to the caller
+	 *               (various data can be attached to Intent "extras").
+	 *
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (PermissionHelper.USE_NEW_PERMISSIONS_FILE_API && resultCode == Activity.RESULT_OK && data != null) {
+			if (requestCode == DroidShows.EXPORT_CSV_CODE) {
+				DroidShowCsvHelper.onOpenDocumentFilePickForCsvExportResult(this, data.getData(), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
+			}
+		}
+	}
+
+	/***************************************************************/
+	///////////// CSV-Export support
+	/***************************************************************/
+
+	private static String lastCsvExportSeriesId = null;
+	private static Integer lastCsvExportSeasonNumber = null;
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void exportAsCsv(String serieId, Integer seasonNumber) {
+		lastCsvExportSeriesId = serieId;
+		lastCsvExportSeasonNumber = seasonNumber;
+		DroidShowCsvHelper.openDocumentFilePickForCsvExport(this, DroidShows.EXPORT_CSV_CODE,
+				DroidShows.getLastUsedBackupUri(this), lastCsvExportSeriesId, lastCsvExportSeasonNumber);
+	}
+
+
 }

@@ -1,11 +1,12 @@
 package nl.asymmetrics.droidshows.thetvdb.model;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
+import nl.asymmetrics.droidshows.utils.Utils;
+
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteException;
 import android.text.TextUtils;
@@ -270,7 +271,7 @@ public class Episode
 		if (dateAsLong != null) {
 			try {
 				long l = Long.decode(dateAsLong);
-				return new SimpleDateFormat("yyyy-MM-dd").format( new Date(l * 1000l));
+				return Utils.formatDate( new Date(l * 1000l));
 			} catch (Exception ex) {
 				; // ignore error
 			}

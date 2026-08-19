@@ -5,9 +5,23 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import androidx.annotation.NonNull;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 //import android.util.Log;
 public class Utils
 {
+	@NonNull
+	public static SimpleDateFormat createDateFormat() {
+		return new SimpleDateFormat("yyyy-MM-dd");
+	}
+
+	@NonNull
+	public static String formatDate(@NonNull Date date) {
+		return createDateFormat().format(date);
+	}
 	public boolean isNetworkAvailable(Activity mActivity) {
 		Context context = mActivity.getApplicationContext();
 		ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);

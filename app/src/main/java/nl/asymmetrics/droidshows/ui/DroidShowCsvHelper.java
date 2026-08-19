@@ -28,6 +28,7 @@ import nl.asymmetrics.droidshows.thetvdb.model.Episode;
 import nl.asymmetrics.droidshows.utils.AndroidFileUtils;
 import nl.asymmetrics.droidshows.utils.PermissionHelper;
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
+import nl.asymmetrics.droidshows.utils.Utils;
 
 /**
  * Android specific workflow/callback-logic to implement csv export
@@ -56,8 +57,8 @@ public class DroidShowCsvHelper {
      *
      * @param activity     owner of the callback #onActivityResult
      * @param requestCode  to be used by callback #onActivityResult and by PermissionHelper
-     * @param seriesId series beeing used
-     * @param seasonNumber seasonNumber beeing used
+     * @param seriesId series being used
+     * @param seasonNumber seasonNumber being used
      */
     public static void openDocumentFilePickForCsvExport(
             Activity activity, int requestCode,
@@ -92,7 +93,7 @@ public class DroidShowCsvHelper {
             // continue with onActivityResult() -> onOpenDocumentFilePickForCsvExportResult()
 
         } // else have no permession yet.
-        // openDocumentFilePickForRestore -> permissionRequest -> onRequestPermissionsResult() -> onOpenDocumentFilePickForCsvExportResult(uri) -> restore(inFile)
+        // openDocumentFilePickForCsvExport -> permissionRequest -> onRequestPermissionsResult() -> onOpenDocumentFilePickForCsvExportResult(uri) -> restore(inFile)
     }
 
     /**
@@ -132,11 +133,11 @@ public class DroidShowCsvHelper {
      *
      * @param context        - Android context to access activity-instance specivic data.
      * @param outputUri  where the csv will be written to: either outDirectory or outFile.
-     * @param filterSeriesId if not null: only episodes belonging to this series are exported
-     * @param filterSeasonNumber if not null: only episodes belonging to this season are exported
+     * @param seriesId if not null: only episodes belonging to this series are exported
+     * @param seasonNumber if not null: only episodes belonging to this season are exported
      */
-    public static void onOpenDocumentFilePickForCsvExportResult(Context context, Uri outputUri, @Nullable String filterSeriesId,@Nullable Integer filterSeasonNumber) {
-        if (outputUri != null) {
+    public static void onOpenDocumentFilePickForCsvExportResult(@NonNull Context context, @NonNull Uri outputUri, @Nullable String seriesId,@Nullable Integer seasonNumber) {
+        if (outputUri != null && !StringUtils.isEmpty(seriesId)) {
             String toastTxt = null;
             PrintWriter out = null;
             String csvFileName = "";
@@ -144,7 +145,7 @@ public class DroidShowCsvHelper {
             try {
                 if (USE_PICK_CSV_OUTPUT_DIRECTORY) {
                     DocumentFile csvOutDir = DocumentFile.fromTreeUri(context, outputUri);
-                    csvFileName = createCsvFileName(context, filterSeriesId, filterSeasonNumber, null);
+                    csvFileName = createCsvFileName(context, seriesId, seasonNumber, null);
                     if (csvOutDir != null) {
                         DocumentFile csvOutFile = csvOutDir.createFile(AndroidFileUtils.getCsvMimeType(), csvFileName);
                         if (csvOutFile != null) {
@@ -156,20 +157,22 @@ public class DroidShowCsvHelper {
                     out = new PrintWriter(context.getContentResolver().openOutputStream(outputUri, "wt"));
                 }
                 if (out != null) {
-                    List<Episode> episodes = SQLiteStore.getInstance(context).getEpisodes(filterSeriesId, filterSeasonNumber);
-                    CsvExporter.writeEpisodes(out, filterSeriesId, episodes.iterator());
+                    String comment = getExportInfoComment(context, seriesId, seasonNumber, comment);
+
+                    List<Episode> episodes = SQLiteStore.getInstance(context).getEpisodes(seriesId, seasonNumber);
+                    CsvExporter.writeEpisodes(out, seriesId, episodes.iterator(), comment);
                     toastTxt = context.getString(R.string.dialog_csv_export_done) +" " + outputUri + "/" + csvFileName;
                 } else {
                     toastTxt = context.getString(R.string.dialog_csv_export_done) +" " + outputUri + "/" + csvFileName;
                 }
                 Log.i(SQLiteStore.TAG, toastTxt
-                        + " for series: " + filterSeriesId
-                        + " seasonNumber: " + filterSeasonNumber);
+                        + " for series: " + seriesId
+                        + " seasonNumber: " + seasonNumber);
             } catch (Exception e) {
                 toastTxt = context.getString(R.string.dialog_csv_export_done) +" " + outputUri + "/" + csvFileName;
                 Log.e(SQLiteStore.TAG, toastTxt
-                        + " for series: " + filterSeriesId
-                        + " seasonNumber: " + filterSeasonNumber, e);
+                        + " for series: " + seriesId
+                        + " seasonNumber: " + seasonNumber, e);
             } finally {
                 if (out != null) {
                     try {
@@ -181,6 +184,18 @@ public class DroidShowCsvHelper {
             }
             Toast.makeText(context.getApplicationContext(), toastTxt, Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static String getExportInfoComment(@NonNull Context context, @Nullable String seriesId, Integer seasonNumber, String comment) {
+        String serieName = SQLiteStore.getInstance(context).getSerieName(seriesId);
+
+        if (!StringUtils.isEmpty(serieName)) {
+            comment = String.format("created with '%s' on %s for Series='%s'; seriesId='%s'; seasonNumber='%s' ",
+                    context.getString(R.string.layout_app_name),
+                    Utils.formatDate(new Date()),
+                    serieName, seriesId, seasonNumber != null ? seasonNumber : "");
+        }
+        return comment;
     }
 
 }

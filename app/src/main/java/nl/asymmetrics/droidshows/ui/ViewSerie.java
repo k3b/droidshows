@@ -8,6 +8,8 @@ import java.util.List;
 import nl.asymmetrics.droidshows.R;
 import nl.asymmetrics.droidshows.utils.SQLiteStore;
 import nl.asymmetrics.droidshows.utils.SwipeDetect;
+import nl.asymmetrics.droidshows.utils.Utils;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -134,7 +136,7 @@ public class ViewSerie extends Activity
 			if (!firstAired.equals("null") && !firstAired.equals("")) {
 				TextView firstAiredV = (TextView) findViewById(R.id.firstAired);
 				try {
-					Date epDate = SQLiteStore.dateFormat.parse(firstAired);
+					Date epDate = Utils.createDateFormat().parse(firstAired);
 					firstAired = SimpleDateFormat.getDateInstance().format(epDate);
 				} catch (ParseException e) {
 					Log.e(SQLiteStore.TAG, e.getMessage());

@@ -30,14 +30,13 @@ import androidx.annotation.Nullable;
 
 public class SQLiteStore extends SQLiteOpenHelper
 {
-	public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	public static final SimpleDateFormat dateFormatSeen = new SimpleDateFormat("yyyyMMdd");
+    public static final SimpleDateFormat dateFormatSeen = new SimpleDateFormat("yyyyMMdd");
 	public static final String TAG = "DroidShows";
 	private static SQLiteStore instance = null;
 	private static String DB_PATH = "";
 	private static String DB_NAME = "DroidShows.db";
 	private SQLiteDatabase db;
-	private static String today = dateFormat.format(Calendar.getInstance().getTime());	// Get today's date;
+	private static String today = Utils.formatDate(Calendar.getInstance().getTime());	// Get today's date;
 
 	public static SQLiteStore getInstance(Context context) {
 		if (instance == null)
@@ -145,7 +144,7 @@ public class SQLiteStore extends SQLiteOpenHelper
 			nextEpisode = tmpNextEpisode;
 		if (!tmpNextAir.isEmpty() && !tmpNextAir.equals("null")) {
 			try {
-				nextAir = SQLiteStore.dateFormat.parse(tmpNextAir);
+				nextAir = Utils.createDateFormat().parse(tmpNextAir);
 			} catch (ParseException e) {
 				e.printStackTrace();
 			}
@@ -386,7 +385,7 @@ public class SQLiteStore extends SQLiteOpenHelper
 					Date airedDate = null;
 					if (!aired.isEmpty() && !aired.equals("null")) {
 							try { 
-								airedDate = dateFormat.parse(aired);
+								airedDate = Utils.createDateFormat().parse(aired);
 								aired = SimpleDateFormat.getDateInstance().format(airedDate);
 							} catch (ParseException e) { e.printStackTrace(); }
 					} else
@@ -1152,9 +1151,10 @@ public class SQLiteStore extends SQLiteOpenHelper
 			this.episode = episode;
 			this.firstAired = firstAired;
 			if (!firstAired.equals("") && !firstAired.equals("null")) {
-				try { this.firstAiredDate = new SimpleDateFormat("yyyy-MM-dd").parse(firstAired);	// used by seasons AsyncTask, so shouldn't use dateFormat
+				try { this.firstAiredDate = Utils.createDateFormat().parse(firstAired);	// used by seasons AsyncTask, so shouldn't use dateFormat
 				} catch (ParseException e) { e.printStackTrace(); }
 			}
 		}
 	}
+
 }

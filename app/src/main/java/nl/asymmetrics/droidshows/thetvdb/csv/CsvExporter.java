@@ -16,9 +16,13 @@
 package nl.asymmetrics.droidshows.thetvdb.csv;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.opencsv.CSVWriter;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.IOException;
 import java.io.Writer;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -40,8 +44,10 @@ public class CsvExporter { //  implements AutoCloseable requires android-4.4 :-(
      * @param resultWriter must be closed by the caller
      * @param episodes episode data to be exported
      */
-    public static void writeEpisodes(@NonNull Writer resultWriter, String seriesId, @NonNull Iterator<Episode> episodes) {
-        CsvExporter csvExporter = new CsvExporter(resultWriter);
+    public static void writeEpisodes(@NonNull Writer resultWriter, @NonNull String seriesId,
+                                     @NonNull Iterator<Episode> episodes, @Nullable String comment) {
+        CsvExporter csvExporter = new CsvExporter(resultWriter, comment);
+
         csvExporter.writeCsvHeader();
 
         while(episodes.hasNext()) {
@@ -49,13 +55,23 @@ public class CsvExporter { //  implements AutoCloseable requires android-4.4 :-(
         }
     }
 
-    public CsvExporter(Writer resultWriter) {
+    public CsvExporter(Writer resultWriter, String comment) {
         /* requires com.opencsv:opencsv:5.7.1 that is not compatible with old java binary format JavaVersion.VERSION_1_8
         csvWriter = new CSVWriterBuilder(resultWriter)
                 .withSeparator(CsvDefinitions.CSV_FIELD_DELIMITER_CHAR)
                 .build();
 
          */
+        if (!StringUtils.isEmpty(comment)) {
+            try {
+                resultWriter.write("# ");
+                resultWriter.write(comment);
+                resultWriter.write("\n");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         // compatible with com.opencsv:opencsv:3.10
         csvWriter = new CSVWriter(resultWriter, CsvDefinitions.CSV_FIELD_DELIMITER_CHAR);
 
